@@ -18,6 +18,11 @@
   --btn-font-size:          1rem;     /* text-base */
 }
 
+/* Prevent double-tap zoom on buttons */
+button {
+  touch-action: manipulation;
+}
+
 .btn {
   display: inline-block;
   padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
@@ -74,6 +79,12 @@ input, button, textarea, select {
   outline: none;
 }
 
+/* Style the title button to look like plain text */
+.title-button {
+  all: unset; /* Remove default button styles */
+  cursor: pointer; /* Add a pointer cursor */
+}
+
 /* Player card wrapper */
 .player-card {
   display: flex;
@@ -83,6 +94,24 @@ input, button, textarea, select {
   border-radius: var(--btn-radius);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   gap: 0.5rem;
+}
+
+/* Highlight player card with a red outline */
+.highlight-danger {
+  border: 1.5px solid #ef4444; /* red-500 */
+}
+
+/* Grey out the player card */
+.greyed-out {
+  background-color: #e5e7eb; /* gray-300 */
+  color: #b5b5b5; /* gray-500 */
+  opacity: 0.7;
+}
+
+/* Ensure buttons inside greyed-out cards remain functional */
+.greyed-out button {
+  pointer-events: auto; /* Re-enable interactions for buttons */
+  opacity: 1; /* Keep buttons fully visible */
 }
 
 /* Remove “×” button in corner */
@@ -143,3 +172,46 @@ input, button, textarea, select {
   gap: 0.5rem;
 }
 
+/* Modal styling */
+#endGameModal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  justify-content: center;
+  align-items: center;
+}
+
+#endGameModal.flex {
+  display: flex; /* Show modal when active */
+}
+
+#endGameModal .btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 0.375rem;
+}
+
+/* Responsive styles for buttons */
+.show-leaderboard-btn,
+.end-game-btn,
+.reset-game-btn {
+  padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
+  font-size: var(--btn-font-size);
+  margin: 0.5rem;
+}
+
+/* Adjust button styles for smaller screens */
+@media (max-width: 768px) {
+  .show-leaderboard-btn,
+  .end-game-btn,
+  .reset-game-btn {
+    padding: 0.5rem 0.75rem; /* Smaller padding */
+    font-size: 0.9rem;       /* Smaller font size */
+    margin: 0.25rem;         /* Reduced spacing */
+    width: 100%;             /* Full-width buttons */
+  }
+}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -7,12 +8,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="/static/css/custom.css" rel="stylesheet" />
 </head>
+
 <body class="p-4 max-w-md mx-auto bg-gray-100 min-h-screen">
 
   <div class="text-right mb-2">
-    <a href="/logout" class="text-sm text-blue-600">Logout</a>
+    <a href="/logout" class="text-sm text-blue-600">Uitloggen</a>
   </div>
-  <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">Toepen</h1>
+  <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">
+  <button id="playNiels" data-action="titleClick" class="title-button">Toepen</button>
+</h1>
 
   <!-- Audio Elements -->
   <audio id="sound-point-add" src="/static/sounds/click.mp3"></audio>
@@ -20,6 +24,7 @@
   <audio id="sound-small-add" src="/static/sounds/small-player-point.mp3"></audio>
   <audio id="sound-small-reset" src="/static/sounds/click.mp3"></audio>
   <audio id="sound-game-win" src="/static/sounds/game-end.mp3"></audio>
+  <audio id="sound-title-click" src="/static/sounds/title-click.mp3"></audio>
 
   <!-- Add Player -->
   <div class="mb-4 flex">
@@ -29,9 +34,9 @@
 
   <!-- Controls -->
   <div class="mb-4 flex justify-between">
-    <button id="showLeaderboard" class="btn btn-primary">Leaderboard</button>
-    <button id="endGame"         class="btn btn-success">Einde Potje</button>
-    <button id="resetGame"       class="btn btn-danger">Reset Potje</button>
+    <button id="showLeaderboard" class="btn btn-primary show-leaderboard-btn">Leaderboard</button>
+    <button id="endGame" class="btn btn-success end-game-btn">Einde Potje</button>
+    <button id="resetGame" class="btn btn-danger reset-game-btn">Reset Potje</button>
   </div>
 
   <!-- Player List -->
@@ -51,6 +56,17 @@
     </div>
   </div>
 
+  <div id="endGameModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white p-4 rounded w-11/12 max-w-sm text-center">
+      <p class="text-lg font-bold mb-4">Einde potje?</p>
+      <div class="flex justify-around">
+        <button id="cancelEndGame" class="btn btn-secondary">Nee</button>
+        <button id="confirmEndGame" class="btn btn-success">Ja</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/app.js"></script>
 </body>
+
 </html>

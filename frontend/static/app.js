@@ -1,4 +1,5 @@
 const apiUrl = window.location.origin;
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let players = [];
 
 defaultSounds = {
@@ -6,20 +7,34 @@ defaultSounds = {
   pointRemove: document.getElementById('sound-point-remove'),
   smallAdd:    document.getElementById('sound-small-add'),
   smallReset:  document.getElementById('sound-small-reset'),
-  gameWin:     document.getElementById('sound-game-win')
+  gameWin:     document.getElementById('sound-game-win'),
+  titleClick: document.getElementById('sound-title-click')
 };
 
 function playSound(key) {
   const audio = defaultSounds[key];
   if (!audio) return;
-  audio.currentTime = 0;
-  audio.play();
+
+  // Use AudioContext to play the sound
+  const source = audioContext.createBufferSource();
+  fetch(audio.src)
+    .then(response => response.arrayBuffer())
+    .then(data => audioContext.decodeAudioData(data))
+    .then(buffer => {
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+    })
+    .catch(err => console.error('Error playing sound:', err));
 }
 
 function addLocalPlayer(name) {
   if (!players.find(p => p.name === name)) {
     players.push({ name, points: 0, small: 0, id: null });
   }
+
+  // Clear the input field after adding the player
+  document.getElementById('newName').value = '';
 }
 
 function removeLocalPlayer(name) {
@@ -32,6 +47,16 @@ function renderPlayers() {
   players.forEach((p, idx) => {
     const li = document.createElement('li');
     li.className = 'player-card';
+
+    // Add a red outline if the player has 9 points or 2 small points
+    if (p.points === 9 || p.small >= 2) {
+      li.classList.add('highlight-danger');
+    }
+
+    // Grey out the player card if the player has 10 points
+    if (p.points >= 10) {
+      li.classList.add('greyed-out');
+    }
 
     li.innerHTML = `
       <button data-idx="${idx}" class="remove-btn">×</button>
@@ -112,11 +137,26 @@ async function endGame() {
   renderPlayers();
 }
 
+// Show the confirmation modal
+function showEndGameModal() {
+  document.getElementById('endGameModal').classList.replace('hidden', 'flex');
+}
+
+// Hide the confirmation modal
+function hideEndGameModal() {
+  document.getElementById('endGameModal').classList.replace('flex', 'hidden');
+}
+
+// Handle the "Einde Potje" button click
 document.body.addEventListener('click', async e => {
   const btn = e.target.closest('button');
   if (!btn) return;
+
   const idx = btn.dataset.idx;
   switch (btn.dataset.action) {
+    case 'titleClick':
+      playSound('titleClick');
+      break;
     case 'incPoints':
       players[idx].points++;
       playSound('pointAdd');
@@ -146,9 +186,14 @@ document.body.addEventListener('click', async e => {
       } else if (btn.id === 'showLeaderboard') {
         showLeaderboard();
       } else if (btn.id === 'closeLeaderboard') {
-        document.getElementById('leaderboardModal').classList.replace('flex','hidden');
+        document.getElementById('leaderboardModal').classList.replace('flex', 'hidden');
       } else if (btn.id === 'endGame') {
-        endGame();
+        showEndGameModal(); // Show the confirmation modal
+      } else if (btn.id === 'cancelEndGame') {
+        hideEndGameModal(); // Hide the modal when "Nee" is pressed
+      } else if (btn.id === 'confirmEndGame') {
+        hideEndGameModal(); // Hide the modal
+        endGame(); // End the game when "Ja" is pressed
       }
   }
   renderPlayers();
