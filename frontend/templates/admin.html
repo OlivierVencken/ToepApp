@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Toepen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/static/css/custom.css" rel="stylesheet" />
+</head>
+<body class="p-4 max-w-lg mx-auto bg-gray-100 min-h-screen">
+  <div class="text-right mb-2">
+    <a href="/logout" class="text-sm text-blue-600">Logout</a>
+  </div>
+  <h1 class="text-3xl font-bold mb-6 text-center text-red-600">Admin Panel</h1>
+
+  <!-- Header row -->
+  <div class="grid grid-cols-4 gap-2 font-semibold border-b pb-2 mb-2">
+    <div>Speler</div>
+    <div class="text-center">Wins</div>
+    <div class="text-center">Losses</div>
+    <div class="text-center">Actions</div>
+  </div>
+
+  <!-- Player rows -->
+  <ul id="adminList" class="space-y-2"></ul>
+
+  <script>
+    const apiUrl = window.location.origin;
+
+    async function fetchPlayers() {
+      const res = await fetch(`${apiUrl}/players`);
+      return res.json();
+    }
+
+    function renderAdmin(players) {
+      const ul = document.getElementById('adminList');
+      ul.innerHTML = '';
+      players.forEach(p => {
+        const li = document.createElement('li');
+        li.className = 'bg-white p-4 rounded shadow grid grid-cols-4 items-center';
+        li.innerHTML = `
+          <div>${p.name}</div>
+          <div class="text-center">${p.wins}</div>
+          <div class="text-center">${p.losses}</div>
+          <div class="text-center space-x-1">
+            <button onclick="update(${p.id}, 1, 0)"  class="btn btn-success p-1">+Win</button>
+            <button onclick="update(${p.id}, -1, 0)" class="btn btn-secondary p-1">–Win</button>
+            <button onclick="update(${p.id}, 0, 1)"  class="btn btn-danger  p-1">+Loss</button>
+            <button onclick="update(${p.id}, 0, -1)" class="btn btn-secondary p-1">–Loss</button>
+          </div>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    async function load() {
+      const players = await fetchPlayers();
+      renderAdmin(players);
+    }
+
+    async function update(id, winDelta, lossDelta) {
+      await fetch(`${apiUrl}/players/${id}/record`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          win_delta:  winDelta,
+          loss_delta: lossDelta
+        })
+      });
+      load();
+    }
+
+    load();
+  </script>
+</body>
+</html>
