@@ -14,9 +14,10 @@
   <div class="text-right mb-2">
     <a href="/logout" class="text-sm text-blue-600">Uitloggen</a>
   </div>
+  
   <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">
-  <button id="playNiels" data-action="titleClick" class="title-button">Toepen</button>
-</h1>
+    <button id="playNiels" data-action="titleClick" class="title-button">Toepen</button>
+  </h1>
 
   <!-- Audio Elements -->
   <audio id="sound-point-add" src="/static/sounds/click.mp3"></audio>
@@ -42,7 +43,7 @@
   <!-- Player List -->
   <ul id="playerList" class="space-y-2"></ul>
 
-  <!-- Leaderboard Modal -->
+  <!-- Leaderboard -->
   <div id="leaderboardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
     <div class="bg-white p-4 rounded w-11/12 max-w-sm">
       <h2 class="text-xl font-bold mb-2">Leaderboard</h2>
@@ -56,6 +57,7 @@
     </div>
   </div>
 
+  <!-- End Game Popup -->
   <div id="endGameModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
     <div class="bg-white p-4 rounded w-11/12 max-w-sm text-center">
       <p class="text-lg font-bold mb-4">Einde potje?</p>
