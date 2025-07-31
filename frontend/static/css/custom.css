@@ -79,10 +79,11 @@ input, button, textarea, select {
   outline: none;
 }
 
-/* Style the title button to look like plain text */
+/* Style the title button */
 .title-button {
-  all: unset; /* Remove default button styles */
-  cursor: pointer; /* Add a pointer cursor */
+  all: unset;
+  cursor: pointer; 
+  touch-action: manipulation;
 }
 
 /* Player card wrapper */
@@ -202,6 +203,37 @@ input, button, textarea, select {
   padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
   font-size: var(--btn-font-size);
   margin: 0.5rem;
+}
+
+/* Settings Modal */
+#settingsModal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  justify-content: center;
+  align-items: center;
+}
+
+#settingsModal.flex {
+  display: flex; /* Show modal when active */
+}
+
+/* Settings Icon Button */
+.btn-icon {
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-icon:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Adjust button styles for smaller screens */

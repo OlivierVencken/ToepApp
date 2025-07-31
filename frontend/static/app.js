@@ -1,6 +1,10 @@
 const apiUrl = window.location.origin;
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
 let players = [];
+let maxPoints = 10;
+let maxSmallPoints = 2;
+let soundEnabled = true;
 
 defaultSounds = {
   pointAdd:    document.getElementById('sound-point-add'),
@@ -12,10 +16,11 @@ defaultSounds = {
 };
 
 function playSound(key) {
+  if (!soundEnabled) return;
+
   const audio = defaultSounds[key];
   if (!audio) return;
 
-  // Use AudioContext to play the sound
   const source = audioContext.createBufferSource();
   fetch(audio.src)
     .then(response => response.arrayBuffer())
@@ -48,13 +53,13 @@ function renderPlayers() {
     const li = document.createElement('li');
     li.className = 'player-card';
 
-    // Add a red outline if the player has 9 points or 2 small points
-    if (p.points === 9 || p.small >= 2) {
+    // Add a red outline if the player is at maxPoints - 1 or maxSmallPoints - 1
+    if (p.points === maxPoints - 1 || p.small === maxSmallPoints - 1) {
       li.classList.add('highlight-danger');
     }
 
-    // Grey out the player card if the player has 10 points
-    if (p.points >= 10) {
+    // Grey out the player card if the player has maxPoints
+    if (p.points >= maxPoints) {
       li.classList.add('greyed-out');
     }
 
@@ -147,6 +152,30 @@ function hideEndGameModal() {
   document.getElementById('endGameModal').classList.replace('flex', 'hidden');
 }
 
+// Show the settings modal
+function showSettingsModal() {
+  document.getElementById('settingsModal').classList.replace('hidden', 'flex');
+}
+
+// Hide the settings modal
+function hideSettingsModal() {
+  document.getElementById('settingsModal').classList.replace('flex', 'hidden');
+}
+
+// Apply settings
+function applySettings(event) {
+  event.preventDefault();
+
+  // The maxPoints and maxSmallPoints values are already updated via the buttons
+  soundEnabled = document.getElementById('soundToggle').checked;
+
+  // Re-render the players to apply the new settings
+  renderPlayers();
+
+  // Hide the modal
+  hideSettingsModal();
+}
+
 // Handle the "Einde Potje" button click
 document.body.addEventListener('click', async e => {
   const btn = e.target.closest('button');
@@ -194,9 +223,43 @@ document.body.addEventListener('click', async e => {
       } else if (btn.id === 'confirmEndGame') {
         hideEndGameModal(); // Hide the modal
         endGame(); // End the game when "Ja" is pressed
+      } else if (btn.id === 'showSettings') {
+        showSettingsModal(); // Show the settings modal
+      } else if (btn.id === 'closeSettings') {
+        hideSettingsModal(); // Hide the settings modal
+      } else if (btn.id === 'applySettings') {
+        applySettings(e); // Apply the settings when "Toepassen" is pressed
       }
   }
   renderPlayers();
+});
+
+document.getElementById('increaseMaxPoints').addEventListener('click', () => {
+  maxPoints++;
+  document.getElementById('maxPointsDisplay').textContent = maxPoints;
+  renderPlayers();
+});
+
+document.getElementById('decreaseMaxPoints').addEventListener('click', () => {
+  if (maxPoints > 1) {
+    maxPoints--;
+    document.getElementById('maxPointsDisplay').textContent = maxPoints;
+    renderPlayers();
+  }
+});
+
+document.getElementById('increaseMaxSmallPoints').addEventListener('click', () => {
+  maxSmallPoints++;
+  document.getElementById('maxSmallPointsDisplay').textContent = maxSmallPoints;
+  renderPlayers();
+});
+
+document.getElementById('decreaseMaxSmallPoints').addEventListener('click', () => {
+  if (maxSmallPoints > 1) {
+    maxSmallPoints--;
+    document.getElementById('maxSmallPointsDisplay').textContent = maxSmallPoints;
+    renderPlayers();
+  }
 });
 
 renderPlayers();
