@@ -1,8 +1,5 @@
 TODO: 
-Fix ui of settings tab
-- settings icon button
-- +1/-1 buttons for max player/small player points
-- sound checkbox is fine
+Settings icon replacement
 
 Animations?
 - adding a point

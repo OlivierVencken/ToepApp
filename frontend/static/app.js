@@ -1,265 +1,272 @@
-const apiUrl = window.location.origin;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-let players = [];
-let maxPoints = 10;
-let maxSmallPoints = 2;
-let soundEnabled = true;
+; (function () {
+  const apiUrl = window.location.origin;
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-defaultSounds = {
-  pointAdd:    document.getElementById('sound-point-add'),
-  pointRemove: document.getElementById('sound-point-remove'),
-  smallAdd:    document.getElementById('sound-small-add'),
-  smallReset:  document.getElementById('sound-small-reset'),
-  gameWin:     document.getElementById('sound-game-win'),
-  titleClick: document.getElementById('sound-title-click')
-};
+  /*** CONFIG & STATE ***/
+  const config = {
+    maxPoints: 10,
+    maxSmall: 2,
+    soundEnabled: true,
+    sounds: {
+      pointAdd: 'sound-point-add',
+      pointRemove: 'sound-point-remove',
+      smallAdd: 'sound-small-add',
+      smallReset: 'sound-small-reset',
+      gameWin: 'sound-game-win',
+      titleClick: 'sound-title-click'
+    }
+  };
 
-function playSound(key) {
-  if (!soundEnabled) return;
+  const state = {
+    players: []
+  };
 
-  const audio = defaultSounds[key];
-  if (!audio) return;
+  /*** SOUND MANAGER ***/
+  const Sound = {
+    play(key) {
+      if (!config.soundEnabled || !config.sounds[key]) return;
+      const audio = document.getElementById(config.sounds[key]);
+      if (!audio) return;
+      fetch(audio.src)
+        .then(r => r.arrayBuffer())
+        .then(data => audioCtx.decodeAudioData(data))
+        .then(buffer => {
+          const src = audioCtx.createBufferSource();
+          src.buffer = buffer;
+          src.connect(audioCtx.destination);
+          src.start();
+        })
+        .catch(err => console.error('Sound error:', err));
+    }
+  };
 
-  const source = audioContext.createBufferSource();
-  fetch(audio.src)
-    .then(response => response.arrayBuffer())
-    .then(data => audioContext.decodeAudioData(data))
-    .then(buffer => {
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-    })
-    .catch(err => console.error('Error playing sound:', err));
-}
-
-function addLocalPlayer(name) {
-  if (!players.find(p => p.name === name)) {
-    players.push({ name, points: 0, small: 0, id: null });
+  /*** PLAYER MODEL ***/
+  class Player {
+    constructor(name) {
+      this.name = name;
+      this.points = 0;
+      this.small = 0;
+      this.id = null;
+    }
+    resetScores() {
+      this.points = 0;
+      this.small = 0;
+    }
   }
 
-  // Clear the input field after adding the player
-  document.getElementById('newName').value = '';
-}
+  /*** UI SELECTORS ***/
+  const ui = {
+    playerList: '#playerList',
+    leaderboardList: '#leaderboardList',
+    modals: {
+      leaderboard: '#leaderboardModal',
+      endGame: '#endGameModal',
+      settings: '#settingsModal'
+    },
+    newNameInput: '#newName',
+    maxPointsDisp: '#maxPointsDisplay',
+    maxSmallDisp: '#maxSmallPointsDisplay',
+    soundToggle: '#soundToggle'
+  };
 
-function removeLocalPlayer(name) {
-  players = players.filter(p => p.name !== name);
-}
-
-function renderPlayers() {
-  const list = document.getElementById('playerList');
-  list.innerHTML = '';
-  players.forEach((p, idx) => {
-    const li = document.createElement('li');
-    li.className = 'player-card';
-
-    // Add a red outline if the player is at maxPoints - 1 or maxSmallPoints - 1
-    if (p.points === maxPoints - 1 || p.small === maxSmallPoints - 1) {
-      li.classList.add('highlight-danger');
-    }
-
-    // Grey out the player card if the player has maxPoints
-    if (p.points >= maxPoints) {
-      li.classList.add('greyed-out');
-    }
-
-    li.innerHTML = `
-      <button data-idx="${idx}" class="remove-btn">×</button>
-      <div class="player-info">
-        <div class="name">${p.name}</div>
-        <div class="points">${p.points}</div>
-      </div>
-      <div class="player-actions">
-        <button data-idx="${idx}" data-action="incPoints" class="btn btn-secondary">+</button>
-        <button data-idx="${idx}" data-action="decPoints" class="btn btn-secondary">−</button>
-      </div>
-      <div class="small-section">
-        <div class="label">Kleine Speler</div>
-        <div class="small-count">${p.small}</div>
-        <div class="small-controls">
-          <button data-idx="${idx}" data-action="incSmall"   class="btn btn-tertiary">+</button>
-          <button data-idx="${idx}" data-action="resetSmall" class="btn btn-tertiary">⟳</button>
+  /*** RENDER ***/
+  function renderPlayers() {
+    const list = document.querySelector(ui.playerList);
+    list.innerHTML = '';
+    state.players.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.className = 'player-card';
+      
+      if (p.points >= config.maxPoints) {
+        li.classList.add('greyed-out');
+      } else if (p.points === config.maxPoints - 1 || p.small === config.maxSmall) {
+        li.classList.add('highlight-danger');
+      }
+      
+      li.innerHTML = `
+        <button data-action="remove" data-idx="${i}" class="remove-btn">×</button>
+        <div class="player-info">
+          <div class="name">${p.name}</div>
+          <div class="points">${p.points}</div>
         </div>
-      </div>
-    `;
-    list.appendChild(li);
-  });
-}
-
-async function showLeaderboard() {
-  const res = await fetch(`${apiUrl}/players`);
-  const all = await res.json();
-  all.sort((a,b) => b.wins - a.wins);
-  const lb = document.getElementById('leaderboardList');
-  lb.innerHTML = all.map(p =>
-    `<li class="grid grid-cols-3">
-       <div>${p.name}</div>
-       <div class="text-center">${p.wins}</div>
-       <div class="text-center">${p.losses}</div>
-     </li>`
-  ).join('');
-  document.getElementById('leaderboardModal').classList.replace('hidden','flex');
-}
-
-async function syncRecords(records) {
-  for (let { id, name, wins, losses } of records) {
-    let pid = id;
-    if (!pid) {
-      const res = await fetch(`${apiUrl}/players`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name })
-      });
-      const data = await res.json();
-      pid = data.id;
-    }
-    await fetch(`${apiUrl}/players/${pid}/record`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ win_delta: wins, loss_delta: losses })
+        <div class="player-actions">
+          <button data-action="incPoints" data-idx="${i}" class="btn btn-secondary">+</button>
+          <button data-action="decPoints" data-idx="${i}" class="btn btn-secondary">−</button>
+        </div>
+        <div class="small-section">
+          <div class="label">Kleine Speler</div>
+          <div class="small-count">${p.small}</div>
+          <div class="small-controls">
+            <button data-action="incSmall" data-idx="${i}" class="btn btn-tertiary">+</button>
+            <button data-action="resetSmall" data-idx="${i}" class="btn btn-tertiary">⟳</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(li);
     });
   }
-}
 
-async function endGame() {
-  if (!players.length) return;
-  // find the lowest point‑total
-  let minPts = Math.min(...players.map(p => p.points));
+  function renderLeaderboard(players) {
+    const lb = document.querySelector(ui.leaderboardList);
+    lb.innerHTML = players.map(p =>
+      `<li class="grid grid-cols-3">
+        <div>${p.name}</div>
+        <div class="text-center">${p.wins}</div>
+        <div class="text-center">${p.losses}</div>
+      </li>`
+    ).join('');
+  }
 
-  // build the win/loss deltas: winner (lowest) +1 win, others +1 loss
-  const records = players.map(p => ({
-    id:     p.id,
-    name:   p.name,
-    wins:   (p.points === minPts ? 1 : 0),
-    losses: (p.points === minPts ? 0 : 1)
-  }));
+  /*** MODAL CONTROLS ***/
+  function toggleModal(name, show) {
+    const modal = document.querySelector(ui.modals[name]);
+    modal.classList.toggle('hidden', !show);
+    modal.classList.toggle('flex', show);
+  }
 
-  playSound('gameWin');
-  await syncRecords(records);
-
-  // reset local scores
-  players.forEach(p => { p.points = 0; p.small = 0; });
-  renderPlayers();
-}
-
-// Show the confirmation modal
-function showEndGameModal() {
-  document.getElementById('endGameModal').classList.replace('hidden', 'flex');
-}
-
-// Hide the confirmation modal
-function hideEndGameModal() {
-  document.getElementById('endGameModal').classList.replace('flex', 'hidden');
-}
-
-// Show the settings modal
-function showSettingsModal() {
-  document.getElementById('settingsModal').classList.replace('hidden', 'flex');
-}
-
-// Hide the settings modal
-function hideSettingsModal() {
-  document.getElementById('settingsModal').classList.replace('flex', 'hidden');
-}
-
-// Apply settings
-function applySettings(event) {
-  event.preventDefault();
-
-  // The maxPoints and maxSmallPoints values are already updated via the buttons
-  soundEnabled = document.getElementById('soundToggle').checked;
-
-  // Re-render the players to apply the new settings
-  renderPlayers();
-
-  // Hide the modal
-  hideSettingsModal();
-}
-
-// Handle the "Einde Potje" button click
-document.body.addEventListener('click', async e => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-
-  const idx = btn.dataset.idx;
-  switch (btn.dataset.action) {
-    case 'titleClick':
-      playSound('titleClick');
-      break;
-    case 'incPoints':
-      players[idx].points++;
-      playSound('pointAdd');
-      break;
-    case 'decPoints':
-      players[idx].points--;
-      playSound('pointRemove');
-      break;
-    case 'incSmall':
-      players[idx].small++;
-      playSound('smallAdd');
-      break;
-    case 'resetSmall':
-      players[idx].small = 0;
-      playSound('smallReset');
-      break;
-    default:
-      if (btn.id === 'addPlayer') {
-        const raw = document.getElementById('newName').value.trim();
-        if (!raw) return;
-        const name = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-        addLocalPlayer(name);
-      } else if (btn.classList.contains('remove-btn')) {
-        removeLocalPlayer(players[idx].name);
-      } else if (btn.id === 'resetGame') {
-        players.forEach(p => { p.points = 0; p.small = 0; });
-      } else if (btn.id === 'showLeaderboard') {
-        showLeaderboard();
-      } else if (btn.id === 'closeLeaderboard') {
-        document.getElementById('leaderboardModal').classList.replace('flex', 'hidden');
-      } else if (btn.id === 'endGame') {
-        showEndGameModal(); // Show the confirmation modal
-      } else if (btn.id === 'cancelEndGame') {
-        hideEndGameModal(); // Hide the modal when "Nee" is pressed
-      } else if (btn.id === 'confirmEndGame') {
-        hideEndGameModal(); // Hide the modal
-        endGame(); // End the game when "Ja" is pressed
-      } else if (btn.id === 'showSettings') {
-        showSettingsModal(); // Show the settings modal
-      } else if (btn.id === 'closeSettings') {
-        hideSettingsModal(); // Hide the settings modal
-      } else if (btn.id === 'applySettings') {
-        applySettings(e); // Apply the settings when "Toepassen" is pressed
+  /*** DATA SYNC ***/
+  async function syncRecords(records) {
+    for (const rec of records) {
+      let pid = rec.id;
+      if (!pid) {
+        const res = await fetch(`${apiUrl}/players`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: rec.name })
+        });
+        pid = (await res.json()).id;
       }
+      await fetch(`${apiUrl}/players/${pid}/record`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ win_delta: rec.wins, loss_delta: rec.losses })
+      });
+    }
   }
-  renderPlayers();
-});
 
-document.getElementById('increaseMaxPoints').addEventListener('click', () => {
-  maxPoints++;
-  document.getElementById('maxPointsDisplay').textContent = maxPoints;
-  renderPlayers();
-});
-
-document.getElementById('decreaseMaxPoints').addEventListener('click', () => {
-  if (maxPoints > 1) {
-    maxPoints--;
-    document.getElementById('maxPointsDisplay').textContent = maxPoints;
+  /*** GAME LOGIC ***/
+  async function endGame() {
+    if (!state.players.length) return;
+    const minPts = Math.min(...state.players.map(p => p.points));
+    const deltas = state.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      wins: p.points === minPts ? 1 : 0,
+      losses: p.points === minPts ? 0 : 1
+    }));
+    Sound.play('gameWin');
+    await syncRecords(deltas);
+    state.players.forEach(p => p.resetScores());
     renderPlayers();
   }
-});
 
-document.getElementById('increaseMaxSmallPoints').addEventListener('click', () => {
-  maxSmallPoints++;
-  document.getElementById('maxSmallPointsDisplay').textContent = maxSmallPoints;
-  renderPlayers();
-});
+  /*** EVENT HANDLING ***/
+  const actionHandlers = {
+    titleClick: () => Sound.play('titleClick'),
+    incPoints: i => { state.players[i].points++; Sound.play('pointAdd'); },
+    decPoints: i => { state.players[i].points--; Sound.play('pointRemove'); },
+    incSmall: i => { state.players[i].small++; Sound.play('smallAdd'); },
+    resetSmall: i => { state.players[i].small = 0; Sound.play('smallReset'); },
+    remove: i => state.players.splice(i, 1)
+  };
 
-document.getElementById('decreaseMaxSmallPoints').addEventListener('click', () => {
-  if (maxSmallPoints > 1) {
-    maxSmallPoints--;
-    document.getElementById('maxSmallPointsDisplay').textContent = maxSmallPoints;
+  document.body.addEventListener('click', async e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const idx = btn.dataset.idx;
+
+    switch (action) {
+      case 'titleClick':
+      case 'incPoints':
+      case 'decPoints':
+      case 'incSmall':
+      case 'resetSmall':
+      case 'remove':
+        actionHandlers[action](Number(idx));
+        break;
+      default:
+        switch (btn.id) {
+          case 'addPlayer': {
+            const raw = document.querySelector(ui.newNameInput).value.trim();
+            if (!raw) return;
+            const name = raw[0].toUpperCase() + raw.slice(1).toLowerCase();
+            if (!state.players.some(p => p.name === name)) {
+              state.players.push(new Player(name));
+            }
+            document.querySelector(ui.newNameInput).value = '';
+            break;
+          }
+          case 'resetGame':
+            state.players.forEach(p => p.resetScores());
+            break;
+          case 'showLeaderboard': {
+            const res = await fetch(`${apiUrl}/players`);
+            const all = await res.json();
+            all.sort((a, b) => b.wins - a.wins);
+            renderLeaderboard(all);
+            toggleModal('leaderboard', true);
+            break;
+          }
+          case 'closeLeaderboard':
+            toggleModal('leaderboard', false);
+            break;
+          case 'endGame':
+            toggleModal('endGame', true);
+            break;
+          case 'cancelEndGame':
+            toggleModal('endGame', false);
+            break;
+          case 'confirmEndGame':
+            toggleModal('endGame', false);
+            await endGame();
+            break;
+          case 'showSettings':
+            toggleModal('settings', true);
+            break;
+          case 'closeSettings':
+            toggleModal('settings', false);
+            break;
+          case 'applySettings':
+            e.preventDefault();
+            config.maxPoints = Number(document.querySelector(ui.maxPointsDisp).textContent);
+            config.maxSmall = Number(document.querySelector(ui.maxSmallDisp).textContent);
+            config.soundEnabled = document.querySelector(ui.soundToggle).checked;
+            renderPlayers();
+            toggleModal('settings', false);
+            break;
+        }
+    }
     renderPlayers();
-  }
-});
+  });
 
-renderPlayers();
+  /*** SETTINGS CONTROLS ***/
+  function bindIncrement(id, key) {
+    document.getElementById(id).addEventListener('click', () => {
+      config[key]++;
+      document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp']).textContent = config[key];
+      Sound.play('pointAdd');
+      renderPlayers();
+    });
+  }
+  function bindDecrement(id, key) {
+    document.getElementById(id).addEventListener('click', () => {
+      if (config[key] > 1) {
+        config[key]--;
+        document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp']).textContent = config[key];
+        Sound.play('pointRemove');
+        renderPlayers();
+      }
+    });
+  }
+
+  bindIncrement('increaseMaxPoints', 'maxPoints');
+  bindDecrement('decreaseMaxPoints', 'maxPoints');
+  bindIncrement('increaseMaxSmallPoints', 'maxSmall');
+  bindDecrement('decreaseMaxSmallPoints', 'maxSmall');
+
+  // Initial render
+  document.querySelector(ui.maxPointsDisp).textContent = config.maxPoints;
+  document.querySelector(ui.maxSmallDisp).textContent = config.maxSmall;
+  renderPlayers();
+})();

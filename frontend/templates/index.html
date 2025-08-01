@@ -9,51 +9,110 @@
   <link href="/static/css/custom.css" rel="stylesheet" />
 </head>
 
-<body class="p-4 max-w-md mx-auto bg-gray-100 min-h-screen">
-
-  <div class="text-right mb-2">
-    <a href="/logout" class="text-sm text-blue-600">Uitloggen</a>
-  </div>
-
-  <h1 class="text-3xl font-bold mb-4 text-center text-blue-600">
-    <button id="playNiels" data-action="titleClick" class="title-button">Toepen</button>
-  </h1>
-
-  <!-- Settings Icon -->
-  <div class="absolute top-4 left-4">
-    <button id="showSettings" class="btn btn-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 10c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm0-14c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z" />
+<body class="p-4 max-w-md mx-auto bg-gray-100 min-h-screen" aria-live="polite">
+  <!-- Header -->
+  <header class="relative mb-4">
+    <nav class="text-right mb-2">
+      <a href="/logout" class="text-sm text-blue-600">Uitloggen</a>
+    </nav>
+    <h1 class="text-3xl font-bold text-center text-blue-600">
+      <button id="playNiels" data-action="titleClick" class="title-button">Toepen</button>
+    </h1>
+    <button id="showSettings" class="btn btn-icon absolute top-0 left-0 mt-1 ml-1" aria-label="Open instellingen">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" viewBox="0 0 512 512" fill="currentColor"
+        aria-hidden="true">
+        <path d="M256,192c-35.285,0-64,28.715-64,64s28.715,64,64,64s64-28.715,64-64S291.285,192,256,192z" />
+        <path d="M494.699,212.48l-28.245-5.44c-12.651-2.411-22.571-10.688-27.285-22.635c-4.715-12.011-3.051-24.832,4.587-35.221
+       l17.728-24.192c6.229-8.469,5.312-20.245-2.133-27.669l-38.293-38.293c-7.211-7.232-18.603-8.299-27.029-2.581l-23.829,16.107
+       c-10.624,7.232-23.467,8.405-35.307,3.285c-11.797-5.163-19.712-15.403-21.653-28.139l-4.565-29.611
+       C307.072,7.68,298.112,0,287.573,0h-54.144c-10.219,0-19.008,7.253-20.949,17.301l-7.019,36.48
+       c-2.368,12.352-10.389,22.208-22.016,27.008c-11.627,4.843-24.299,3.541-34.709-3.52l-30.763-20.821
+       c-8.427-5.717-19.776-4.651-27.029,2.581L52.651,97.323c-7.445,7.424-8.363,19.2-2.133,27.669l17.728,24.213
+       c7.637,10.368,9.301,23.189,4.587,35.2c-4.715,11.947-14.635,20.224-27.307,22.635l-28.224,5.44
+       C7.253,214.421,0,223.211,0,233.429v54.144c0,10.539,7.68,19.499,18.091,21.099l29.611,4.565
+       c12.736,1.941,22.976,9.856,28.139,21.653c5.141,11.797,3.947,24.661-3.285,35.328l-16.107,23.808
+       c-5.739,8.448-4.651,19.797,2.581,27.029l38.293,38.293c7.445,7.467,19.2,8.32,27.669,2.133l24.213-17.728
+       c10.368-7.616,23.168-9.259,35.2-4.587c11.947,4.715,20.224,14.635,22.635,27.307l5.44,28.224
+       C214.421,504.747,223.211,512,233.429,512h54.144c10.539,0,19.499-7.68,21.099-18.091l3.2-20.821
+       c2.005-13.035,10.133-23.381,22.293-28.395c12.075-5.035,25.195-3.477,35.84,4.331l17.003,12.459
+       c8.427,6.187,20.224,5.333,27.669-2.133l38.293-38.293c7.232-7.232,8.32-18.581,2.581-27.029l-16.107-23.829
+       c-7.232-10.645-8.427-23.509-3.285-35.307c5.163-11.797,15.403-19.712,28.139-21.653l29.611-4.565
+       c10.411-1.6,18.091-10.56,18.091-21.099v-54.144C512,223.211,504.747,214.421,494.699,212.48z 
+       M256,362.667c-58.816,0-106.667-47.851-106.667-106.667S197.184,149.333,256,149.333S362.667,197.184,362.667,256
+       S314.816,362.667,256,362.667z\" />
       </svg>
     </button>
-  </div>
 
-  <!-- Audio Elements -->
-  <audio id="sound-point-add" src="/static/sounds/click.mp3"></audio>
-  <audio id="sound-point-remove" src="/static/sounds/click.mp3"></audio>
-  <audio id="sound-small-add" src="/static/sounds/small-player-point.mp3"></audio>
-  <audio id="sound-small-reset" src="/static/sounds/click.mp3"></audio>
-  <audio id="sound-game-win" src="/static/sounds/game-end.mp3"></audio>
-  <audio id="sound-title-click" src="/static/sounds/title-click.mp3"></audio>
+  </header>
 
-  <!-- Add Player -->
-  <div class="mb-4 flex">
-    <input id="newName" placeholder="Speler naam" class="flex-grow border p-2 rounded-l focus:outline-none" />
-    <button id="addPlayer" class="btn btn-success rounded-r">Voeg toe</button>
-  </div>
+  <main>
+    <!-- Audio Collection -->
+    <div id="audioContainer" class="hidden">
+      <audio id="sound-point-add" src="/static/sounds/click.mp3"></audio>
+      <audio id="sound-point-remove" src="/static/sounds/click.mp3"></audio>
+      <audio id="sound-small-add" src="/static/sounds/small-player-point.mp3"></audio>
+      <audio id="sound-small-reset" src="/static/sounds/click.mp3"></audio>
+      <audio id="sound-game-win" src="/static/sounds/game-end.mp3"></audio>
+      <audio id="sound-title-click" src="/static/sounds/title-click.mp3"></audio>
+    </div>
 
-  <!-- Controls -->
-  <div class="mb-4 flex justify-between">
-    <button id="showLeaderboard" class="btn btn-primary show-leaderboard-btn">Leaderboard</button>
-    <button id="endGame" class="btn btn-success end-game-btn">Einde Potje</button>
-    <button id="resetGame" class="btn btn-danger reset-game-btn">Reset Potje</button>
-  </div>
+    <!-- Add Player Form -->
+    <section id="addPlayerSection" class="mb-4">
+      <label for="newName" class="sr-only">Speler naam</label>
+      <div class="flex">
+        <input id="newName" placeholder="Speler naam" class="flex-grow border p-2 rounded-l focus:outline-none" />
+        <button id="addPlayer" class="btn btn-success rounded-r">Voeg toe</button>
+      </div>
+    </section>
 
-  <!-- Player List -->
-  <ul id="playerList" class="space-y-2"></ul>
+    <!-- Game Controls -->
+    <section id="gameControls" class="mb-4 flex justify-between">
+      <button id="showLeaderboard" class="btn btn-primary">Leaderboard</button>
+      <button id="endGame" class="btn btn-success">Einde Potje</button>
+      <button id="resetGame" class="btn btn-danger">Reset Potje</button>
+    </section>
 
-  <!-- Leaderboard -->
-  <div id="leaderboardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <!-- Player List Rendering Container -->
+    <section id="playersSection">
+      <ul id="playerList" class="space-y-2" role="list"></ul>
+    </section>
+  </main>
+
+  <!-- Templates -->
+  <template id="playerCardTemplate">
+    <li class="player-card">
+      <button data-action="remove" data-idx="" class="remove-btn" aria-label="Verwijder speler">&times;</button>
+      <div class="player-info">
+        <div class="name"></div>
+        <div class="points"></div>
+      </div>
+      <div class="player-actions">
+        <button data-action="incPoints" data-idx="" class="btn btn-secondary" aria-label="Punten toevoegen">+</button>
+        <button data-action="decPoints" data-idx="" class="btn btn-secondary" aria-label="Punten verwijderen">−</button>
+      </div>
+      <div class="small-section">
+        <div class="label">Kleine Speler</div>
+        <div class="small-count"></div>
+        <div class="small-controls">
+          <button data-action="incSmall" data-idx="" class="btn btn-tertiary"
+            aria-label="Kleine punten toevoegen">+</button>
+          <button data-action="resetSmall" data-idx="" class="btn btn-tertiary"
+            aria-label="Kleine punten resetten">⟳</button>
+        </div>
+      </div>
+    </li>
+  </template>
+
+  <template id="modalTemplate">
+    <div class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center" data-modal>
+      <div class="bg-white p-4 rounded w-11/12 max-w-sm" role="dialog" aria-modal="true">
+        <slot name="content"></slot>
+      </div>
+    </div>
+  </template>
+
+  <!-- Leaderboard Modal -->
+  <div id="leaderboardModal" data-modal class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
     <div class="bg-white p-4 rounded w-11/12 max-w-sm">
       <h2 class="text-xl font-bold mb-2">Leaderboard</h2>
       <div class="grid grid-cols-3 gap-2 font-semibold border-b pb-2">
@@ -61,13 +120,13 @@
         <div class="text-center">Wins</div>
         <div class="text-center">Losses</div>
       </div>
-      <ul id="leaderboardList" class="mt-2 space-y-1"></ul>
+      <ul id="leaderboardList" class="mt-2 space-y-1" role="list"></ul>
       <button id="closeLeaderboard" class="btn btn-secondary mt-4">Sluiten</button>
     </div>
   </div>
 
-  <!-- End Game Popup -->
-  <div id="endGameModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+  <!-- End Game Confirmation -->
+  <div id="endGameModal" data-modal>
     <div class="bg-white p-4 rounded w-11/12 max-w-sm text-center">
       <p class="text-lg font-bold mb-4">Einde potje?</p>
       <div class="flex justify-around">
@@ -78,34 +137,35 @@
   </div>
 
   <!-- Settings Modal -->
-  <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+  <div id="settingsModal" data-modal>
     <div class="bg-white p-4 rounded w-11/12 max-w-sm">
       <h2 class="text-xl font-bold mb-4 text-center">Instellingen</h2>
       <form id="settingsForm" class="space-y-4">
-        <!-- Max Points -->
         <div>
-          <label for="maxPoints" class="block text-sm font-medium text-gray-700">Maximale punten</label>
+          <label for="maxPointsDisplay" class="block text-sm font-medium text-gray-700">Maximale punten</label>
           <div class="flex items-center gap-2">
-            <button type="button" id="decreaseMaxPoints" class="btn btn-secondary">-1</button>
+            <button type="button" id="decreaseMaxPoints" class="btn btn-secondary"
+              aria-label="Verlaag max punten">-1</button>
             <span id="maxPointsDisplay" class="text-lg font-bold">10</span>
-            <button type="button" id="increaseMaxPoints" class="btn btn-secondary">+1</button>
+            <button type="button" id="increaseMaxPoints" class="btn btn-secondary"
+              aria-label="Verhoog max punten">+1</button>
           </div>
         </div>
-        <!-- Max Small Player Points -->
         <div>
-          <label for="maxSmallPoints" class="block text-sm font-medium text-gray-700">Maximale kleine speler punten</label>
+          <label for="maxSmallPointsDisplay" class="block text-sm font-medium text-gray-700">Maximale kleine speler
+            punten</label>
           <div class="flex items-center gap-2">
-            <button type="button" id="decreaseMaxSmallPoints" class="btn btn-secondary">-1</button>
+            <button type="button" id="decreaseMaxSmallPoints" class="btn btn-secondary"
+              aria-label="Verlaag kleine punten">-1</button>
             <span id="maxSmallPointsDisplay" class="text-lg font-bold">2</span>
-            <button type="button" id="increaseMaxSmallPoints" class="btn btn-secondary">+1</button>
+            <button type="button" id="increaseMaxSmallPoints" class="btn btn-secondary"
+              aria-label="Verhoog kleine punten">+1</button>
           </div>
         </div>
-        <!-- Sound Toggle -->
         <div class="flex items-center">
           <input type="checkbox" id="soundToggle" class="mr-2" checked />
           <label for="soundToggle" class="text-sm font-medium text-gray-700">Geluid aan/uit</label>
         </div>
-        <!-- Buttons -->
         <div class="flex justify-between">
           <button type="button" id="closeSettings" class="btn btn-secondary">Annuleren</button>
           <button type="submit" id="applySettings" class="btn btn-primary">Opslaan</button>
@@ -114,7 +174,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js" defer></script>
 </body>
 
 </html>
