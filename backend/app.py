@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(
     __name__,
     static_folder='../frontend/static',
-    template_folder='../frontend/templates'
+    template_folder='../frontend/'
 )
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///toepen.db'
