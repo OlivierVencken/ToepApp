@@ -5,6 +5,9 @@ Animations?
 - player reaches max points
 - game end (win)
 
+Cleanup
+- remove non necessary files/code
+
 
 
 
