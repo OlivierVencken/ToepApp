@@ -8,13 +8,23 @@
   --color-red-600: #dc2626;
   --color-gray-300: #e5e7eb;
   --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
+  --color-gray-600: #3e4651;
+  --color-gray-700: #282f37;
+  --color-gray-800: #15191e;
+  --color-gray-900: #111827;
   --color-pink-75: #fce7f3;
   --color-pink-100: #fbcfe8;
   --color-pink-150: #f9a8b0;
   --color-blue-100: #dbeafe;
   --color-blue-150: #c1d6f2;
   --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Theme Variables */
+  --bg-primary: #f3f4f6;
+  --bg-secondary: var(--color-white);
+  --text-primary: var(--color-black);
+  --text-secondary: var(--color-gray-600);
 
   /* Button Defaults */
   --btn-padding-v: 0.5rem;
@@ -27,6 +37,64 @@
   --gap-sm: 0.5rem;
   --gap-md: 1rem;
   --gap-lg: 1.5rem;
+}
+
+/* Dark Mode Theme */
+[data-theme="dark"] {
+  --bg-primary: var(--color-black);
+  --bg-secondary: var(--color-gray-800);
+  --text-primary: var(--color-white);
+  --text-secondary: var(--color-gray-300);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+/* Override any Tailwind background classes */
+.bg-gray-100 {
+  background-color: var(--bg-primary) !important;
+}
+
+/* Dark Mode Theme */
+[data-theme="dark"] {
+  --bg-primary: var(--color-black);
+  --bg-secondary: var(--color-gray-800);
+  --text-primary: var(--color-white);
+  --text-secondary: var(--color-gray-300);
+}
+
+/* Ensure all text elements use theme colors */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div,
+[data-theme="dark"] label {
+  color: var(--text-primary);
+}
+
+/* Make sure buttons in dark mode have proper contrast */
+[data-theme="dark"] .btn-secondary {
+  background-color: var(--color-gray-700);
+  color: var(--color-white);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: var(--color-gray-600);
+}
+
+[data-theme="dark"] .btn-tertiary {
+  background-color: var(--color-gray-700);
+  color: var(--color-white);
+}
+
+[data-theme="dark"] .btn-tertiary:hover {
+  background-color: var(--color-gray-600);
 }
 
 /* Utility Classes */
@@ -178,9 +246,18 @@
   left: 0;
 }
 
-#showSettings svg {
+#toggleDarkMode {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+#showSettings svg,
+#toggleDarkMode svg {
   width: 1rem;
   height: 1rem;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
 }
 
 .btn-icon:hover {
@@ -200,11 +277,13 @@
 .player-card {
   display: flex;
   position: relative;
-  background-color: var(--color-white);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
   padding: var(--gap-md);
   border-radius: var(--btn-radius);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   gap: var(--gap-md);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 /* Warning & Disabled States */
@@ -292,6 +371,8 @@
   flex: 1;
 }
 
+
+
 /* Modal Base */
 [data-modal] {
   position: fixed;
@@ -306,12 +387,59 @@
   display: flex;
 }
 
-[data-modal]>.modal-content {
-  background-color: var(--color-white);
-  padding: var(--gap-lg);
+/* Modal Content */
+[data-modal] .bg-white {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+/* Input Fields */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--color-gray-300);
+  padding: 0.5rem;
   border-radius: var(--btn-radius);
-  max-width: 360px;
-  width: 90%;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-blue-500);
+}
+
+/* Dark mode input styling */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--color-gray-600);
+}
+
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--color-blue-500);
+}
+
+/* Override Tailwind input classes specifically */
+[data-theme="dark"] #newName {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Responsive: maintain horizontal layout */
