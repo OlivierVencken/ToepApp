@@ -11,7 +11,7 @@
   --color-gray-600: #3e4651;
   --color-gray-700: #282f37;
   --color-gray-800: #15191e;
-  --color-gray-900: #111827;
+  --color-gray-900: #0a0a0b;
   --color-pink-75: #fce7f3;
   --color-pink-100: #fbcfe8;
   --color-pink-150: #f9a8b0;
@@ -302,6 +302,13 @@ body {
   opacity: 1;
 }
 
+/* Dark mode greyed-out styling */
+[data-theme="dark"] .greyed-out {
+  background-color: var(--color-gray-900);
+  color: var(--color-gray-600);
+  opacity: 0.8;
+}
+
 /* Remove Button */
 .remove-btn {
   position: absolute;
@@ -370,8 +377,6 @@ body {
 #gameControls .btn {
   flex: 1;
 }
-
-
 
 /* Modal Base */
 [data-modal] {
