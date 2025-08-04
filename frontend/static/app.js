@@ -123,6 +123,8 @@
   }
 
   // FIREBASE HELPERS
+
+  // Push one record into /leaderboard
   function pushRecordToFirebase({ name, wins, losses }) {
     return db.ref('leaderboard').push({
       name,
@@ -132,23 +134,29 @@
     });
   }
 
-  // fetch last ~100 entries, aggregate per player, sort by wins desc
+  // Fetch last ~100 entries, aggregate per player, sort by wins desc
   async function fetchTopRecords(limit = 10) {
-    const snap = await db.ref('leaderboard')
-                         .orderByChild('ts')
-                         .limitToLast(100)
-                         .get();
-    if (!snap.exists()) return [];
-    const all = Object.values(snap.val());
-    const agg = all.reduce((m, r) => {
-      if (!m[r.name]) m[r.name] = { name: r.name, wins: 0, losses: 0 };
-      m[r.name].wins   += r.wins;
-      m[r.name].losses += r.losses;
-      return m;
-    }, {});
-    return Object.values(agg)
-                 .sort((a, b) => b.wins - a.wins)
-                 .slice(0, limit);
+    try {
+      // COMPAT SDK uses .once('value') on queries
+      const snap = await db.ref('leaderboard')
+                           .orderByChild('ts')
+                           .limitToLast(100)
+                           .once('value');
+      if (!snap.exists()) return [];
+      const all = Object.values(snap.val());
+      const agg = all.reduce((m, r) => {
+        if (!m[r.name]) m[r.name] = { name: r.name, wins: 0, losses: 0 };
+        m[r.name].wins   += r.wins;
+        m[r.name].losses += r.losses;
+        return m;
+      }, {});
+      return Object.values(agg)
+                   .sort((a, b) => b.wins - a.wins)
+                   .slice(0, limit);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+      return [];
+    }
   }
 
   // GAME LOGIC
@@ -207,9 +215,13 @@
         break;
 
       case 'showLeaderboard': {
-        const top = await fetchTopRecords(10);
-        renderLeaderboard(top);
-        toggleModal('leaderboard', true);
+        try {
+          const top = await fetchTopRecords(10);
+          renderLeaderboard(top);
+          toggleModal('leaderboard', true);
+        } catch (err) {
+          console.error('Failed to show leaderboard:', err);
+        }
         break;
       }
       case 'closeLeaderboard':
