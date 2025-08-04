@@ -1,20 +1,18 @@
-
-; (function () {
-  const apiUrl = window.location.origin;
+;(function () {
+  // CONFIG & STATE
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  /*** CONFIG & STATE ***/
   const config = {
     maxPoints: 10,
     maxSmall: 2,
     soundEnabled: true,
     sounds: {
-      pointAdd: 'sound-point-add',
-      pointRemove: 'sound-point-remove',
-      smallAdd: 'sound-small-add',
-      smallReset: 'sound-small-reset',
-      gameWin: 'sound-game-win',
-      titleClick: 'sound-title-click'
+      pointAdd:      'sound-point-add',
+      pointRemove:   'sound-point-remove',
+      smallAdd:      'sound-small-add',
+      smallReset:    'sound-small-reset',
+      gameWin:       'sound-game-win',
+      titleClick:    'sound-title-click'
     }
   };
 
@@ -22,7 +20,7 @@
     players: []
   };
 
-  /*** SOUND MANAGER ***/
+  // SOUND MANAGER
   const Sound = {
     play(key) {
       if (!config.soundEnabled || !config.sounds[key]) return;
@@ -41,51 +39,50 @@
     }
   };
 
-  /*** PLAYER MODEL ***/
+  // PLAYER MODEL
   class Player {
     constructor(name) {
-      this.name = name;
+      this.name   = name;
       this.points = 0;
-      this.small = 0;
-      this.id = null;
+      this.small  = 0;
     }
     resetScores() {
       this.points = 0;
-      this.small = 0;
+      this.small  = 0;
     }
   }
 
-  /*** UI SELECTORS ***/
+  // UI SELECTORS
   const ui = {
-    playerList: '#playerList',
-    leaderboardList: '#leaderboardList',
+    playerList:       '#playerList',
+    leaderboardList:  '#leaderboardList',
     modals: {
-      leaderboard: '#leaderboardModal',
-      endGame: '#endGameModal',
-      settings: '#settingsModal'
+      leaderboard:    '#leaderboardModal',
+      endGame:        '#endGameModal',
+      settings:       '#settingsModal'
     },
-    newNameInput: '#newName',
-    maxPointsDisp: '#maxPointsDisplay',
-    maxSmallDisp: '#maxSmallPointsDisplay',
-    soundToggle: '#soundToggle'
+    newNameInput:     '#newName',
+    maxPointsDisp:    '#maxPointsDisplay',
+    maxSmallDisp:     '#maxSmallPointsDisplay',
+    soundToggle:      '#soundToggle'
   };
 
-  /*** RENDER ***/
+  // RENDER
   function renderPlayers() {
     const list = document.querySelector(ui.playerList);
     list.innerHTML = '';
     state.players.forEach((p, i) => {
       const li = document.createElement('li');
       li.className = 'player-card';
-      
+
       if (p.points >= config.maxPoints) {
         li.classList.add('greyed-out');
       } else if (p.points === config.maxPoints - 1 || p.small === config.maxSmall) {
         li.classList.add('highlight-danger');
       }
-      
+
       li.innerHTML = `
-        <button data-action="remove" data-idx="${i}" class="remove-btn">×</button>
+        <button data-action="remove"    data-idx="${i}" class="remove-btn">×</button>
         <div class="player-info">
           <div class="name">${p.name}</div>
           <div class="points">${p.points}</div>
@@ -98,8 +95,8 @@
           <div class="label">Kleine Speler</div>
           <div class="small-count">${p.small}</div>
           <div class="small-controls">
-            <button data-action="incSmall" data-idx="${i}" class="btn btn-tertiary">+</button>
-            <button data-action="resetSmall" data-idx="${i}" class="btn btn-tertiary">⟳</button>
+            <button data-action="incSmall"  data-idx="${i}" class="btn btn-tertiary">+</button>
+            <button data-action="resetSmall"data-idx="${i}" class="btn btn-tertiary">⟳</button>
           </div>
         </div>
       `;
@@ -118,133 +115,141 @@
     ).join('');
   }
 
-  /*** MODAL CONTROLS ***/
+  // MODAL CONTROLS
   function toggleModal(name, show) {
     const modal = document.querySelector(ui.modals[name]);
     modal.classList.toggle('hidden', !show);
     modal.classList.toggle('flex', show);
   }
 
-  /*** DATA SYNC ***/
-  async function syncRecords(records) {
-    for (const rec of records) {
-      let pid = rec.id;
-      if (!pid) {
-        const res = await fetch(`${apiUrl}/players`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: rec.name })
-        });
-        pid = (await res.json()).id;
-      }
-      await fetch(`${apiUrl}/players/${pid}/record`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ win_delta: rec.wins, loss_delta: rec.losses })
-      });
-    }
+  // FIREBASE HELPERS
+  function pushRecordToFirebase({ name, wins, losses }) {
+    return db.ref('leaderboard').push({
+      name,
+      wins,
+      losses,
+      ts: Date.now()
+    });
   }
 
-  /*** GAME LOGIC ***/
+  // fetch last ~100 entries, aggregate per player, sort by wins desc
+  async function fetchTopRecords(limit = 10) {
+    const snap = await db.ref('leaderboard')
+                         .orderByChild('ts')
+                         .limitToLast(100)
+                         .get();
+    if (!snap.exists()) return [];
+    const all = Object.values(snap.val());
+    const agg = all.reduce((m, r) => {
+      if (!m[r.name]) m[r.name] = { name: r.name, wins: 0, losses: 0 };
+      m[r.name].wins   += r.wins;
+      m[r.name].losses += r.losses;
+      return m;
+    }, {});
+    return Object.values(agg)
+                 .sort((a, b) => b.wins - a.wins)
+                 .slice(0, limit);
+  }
+
+  // GAME LOGIC
   async function endGame() {
     if (!state.players.length) return;
     const minPts = Math.min(...state.players.map(p => p.points));
     const deltas = state.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      wins: p.points === minPts ? 1 : 0,
+      name:   p.name,
+      wins:   p.points === minPts ? 1 : 0,
       losses: p.points === minPts ? 0 : 1
     }));
     Sound.play('gameWin');
-    await syncRecords(deltas);
+    await Promise.all(deltas.map(pushRecordToFirebase));
     state.players.forEach(p => p.resetScores());
     renderPlayers();
   }
 
-  /*** EVENT HANDLING ***/
+  // EVENT HANDLING
   const actionHandlers = {
     titleClick: () => Sound.play('titleClick'),
-    incPoints: i => { state.players[i].points++; Sound.play('pointAdd'); },
-    decPoints: i => { state.players[i].points--; Sound.play('pointRemove'); },
-    incSmall: i => { state.players[i].small++; Sound.play('smallAdd'); },
-    resetSmall: i => { state.players[i].small = 0; Sound.play('smallReset'); },
-    remove: i => state.players.splice(i, 1)
+    incPoints:  i => { state.players[i].points++;    Sound.play('pointAdd');   },
+    decPoints:  i => { state.players[i].points--;    Sound.play('pointRemove');},
+    incSmall:   i => { state.players[i].small++;     Sound.play('smallAdd');   },
+    resetSmall: i => { state.players[i].small = 0;    Sound.play('smallReset'); },
+    remove:     i => state.players.splice(i, 1)
   };
 
   document.body.addEventListener('click', async e => {
-    const btn = e.target.closest('button');
+    const btn   = e.target.closest('button');
     if (!btn) return;
 
     const action = btn.dataset.action;
-    const idx = btn.dataset.idx;
+    const idx    = btn.dataset.idx && Number(btn.dataset.idx);
 
-    switch (action) {
-      case 'titleClick':
-      case 'incPoints':
-      case 'decPoints':
-      case 'incSmall':
-      case 'resetSmall':
-      case 'remove':
-        actionHandlers[action](Number(idx));
-        break;
-      default:
-        switch (btn.id) {
-          case 'addPlayer': {
-            const raw = document.querySelector(ui.newNameInput).value.trim();
-            if (!raw) return;
-            const name = raw[0].toUpperCase() + raw.slice(1).toLowerCase();
-            if (!state.players.some(p => p.name === name)) {
-              state.players.push(new Player(name));
-            }
-            document.querySelector(ui.newNameInput).value = '';
-            break;
-          }
-          case 'resetGame':
-            state.players.forEach(p => p.resetScores());
-            break;
-          case 'showLeaderboard': {
-            const res = await fetch(`${apiUrl}/players`);
-            const all = await res.json();
-            all.sort((a, b) => b.wins - a.wins);
-            renderLeaderboard(all);
-            toggleModal('leaderboard', true);
-            break;
-          }
-          case 'closeLeaderboard':
-            toggleModal('leaderboard', false);
-            break;
-          case 'endGame':
-            toggleModal('endGame', true);
-            break;
-          case 'cancelEndGame':
-            toggleModal('endGame', false);
-            break;
-          case 'confirmEndGame':
-            toggleModal('endGame', false);
-            await endGame();
-            break;
-          case 'showSettings':
-            toggleModal('settings', true);
-            break;
-          case 'closeSettings':
-            toggleModal('settings', false);
-            break;
-          case 'applySettings':
-            e.preventDefault();
-            config.maxPoints = Number(document.querySelector(ui.maxPointsDisp).textContent);
-            config.maxSmall = Number(document.querySelector(ui.maxSmallDisp).textContent);
-            config.soundEnabled = document.querySelector(ui.soundToggle).checked;
-            renderPlayers();
-            toggleModal('settings', false);
-            break;
-        }
+    if (action && actionHandlers[action]) {
+      actionHandlers[action](idx);
+      renderPlayers();
+      return;
     }
-    renderPlayers();
+
+    switch (btn.id) {
+      case 'addPlayer': {
+        const raw = document.querySelector(ui.newNameInput).value.trim();
+        if (!raw) return;
+        const name = raw[0].toUpperCase() + raw.slice(1).toLowerCase();
+        if (!state.players.some(p => p.name === name)) {
+          state.players.push(new Player(name));
+        }
+        document.querySelector(ui.newNameInput).value = '';
+        renderPlayers();
+        break;
+      }
+      case 'resetGame':
+        state.players.forEach(p => p.resetScores());
+        renderPlayers();
+        break;
+
+      case 'showLeaderboard': {
+        const top = await fetchTopRecords(10);
+        renderLeaderboard(top);
+        toggleModal('leaderboard', true);
+        break;
+      }
+      case 'closeLeaderboard':
+        toggleModal('leaderboard', false);
+        break;
+
+      case 'endGame':
+        toggleModal('endGame', true);
+        break;
+      case 'cancelEndGame':
+        toggleModal('endGame', false);
+        break;
+      case 'confirmEndGame':
+        toggleModal('endGame', false);
+        await endGame();
+        break;
+
+      case 'showSettings':
+        toggleModal('settings', true);
+        break;
+      case 'closeSettings':
+        toggleModal('settings', false);
+        break;
+      case 'applySettings':
+        e.preventDefault();
+        config.maxPoints    = Number(document.querySelector(ui.maxPointsDisp).textContent);
+        config.maxSmall     = Number(document.querySelector(ui.maxSmallDisp).textContent);
+        config.soundEnabled = document.querySelector(ui.soundToggle).checked;
+        renderPlayers();
+        toggleModal('settings', false);
+        break;
+    }
   });
 
-  /*** SETTINGS CONTROLS ***/
+  // SETTINGS CONTROLS
   function bindIncrement(id, key) {
     document.getElementById(id).addEventListener('click', () => {
       config[key]++;
-      document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp']).textContent = config[key];
+      document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp'])
+              .textContent = config[key];
       Sound.play('pointAdd');
       renderPlayers();
     });
@@ -253,7 +258,8 @@
     document.getElementById(id).addEventListener('click', () => {
       if (config[key] > 1) {
         config[key]--;
-        document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp']).textContent = config[key];
+        document.querySelector(ui[key === 'maxPoints' ? 'maxPointsDisp' : 'maxSmallDisp'])
+                .textContent = config[key];
         Sound.play('pointRemove');
         renderPlayers();
       }
@@ -265,7 +271,7 @@
   bindIncrement('increaseMaxSmallPoints', 'maxSmall');
   bindDecrement('decreaseMaxSmallPoints', 'maxSmall');
 
-  // Initial render
+  // INITIAL RENDER
   document.querySelector(ui.maxPointsDisp).textContent = config.maxPoints;
   document.querySelector(ui.maxSmallDisp).textContent = config.maxSmall;
   renderPlayers();
