@@ -50,14 +50,11 @@ self.addEventListener('activate', evt => {
 self.addEventListener('fetch', evt => {
   const url = new URL(evt.request.url);
 
-  // If it's one of our /static/sounds/*.mp3 requests…
   if (url.pathname.startsWith('/static/sounds/')) {
-    // respond with cached version (or network fallback, if you prefer)
     evt.respondWith(caches.match(evt.request));
     return;
   }
 
-  // Otherwise do the normal Cache-first strategy
   evt.respondWith(
     caches.match(evt.request)
       .then(cached => cached || fetch(evt.request))
