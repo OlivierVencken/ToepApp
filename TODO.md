@@ -1,4 +1,7 @@
 TODO: 
+Add splash screen
+- splash screen for all devices
+
 Animations?
 - adding a point
 - removing a point
