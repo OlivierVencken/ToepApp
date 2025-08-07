@@ -9,6 +9,12 @@ Animations?
 - player reaches max points
 - game end (win)
 
+Aliases
+- let multiple names point to one name in the database 
+- Olivier, Oli --> Olivier
+- Martijn, Gompie --> Martijn
+- Tijn, Tein --> Tijn
+
 Cleanup
 - remove non necessary files/code
 
