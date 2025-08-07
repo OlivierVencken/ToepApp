@@ -1,6 +1,7 @@
 TODO: 
 Add splash screen
 - splash screen for all devices
+- test???
 
 Animations?
 - adding a point
@@ -10,6 +11,10 @@ Animations?
 
 Cleanup
 - remove non necessary files/code
+
+Issues:
+- audio not working on app --> no fix found
+
 
 
 

@@ -33,14 +33,14 @@
   <script>
     // Firebase config
     const firebaseConfig = {
-      apiKey:            "AIzaSyBizOIJGSS6OSUm1P0CbrYlNVWOzna6e_Y",
-      authDomain:        "toepapp-9f46c.firebaseapp.com",
-      databaseURL:       "https://toepapp-9f46c-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId:         "toepapp-9f46c",
-      storageBucket:     "toepapp-9f46c.firebasestorage.app",
+      apiKey: "AIzaSyBizOIJGSS6OSUm1P0CbrYlNVWOzna6e_Y",
+      authDomain: "toepapp-9f46c.firebaseapp.com",
+      databaseURL: "https://toepapp-9f46c-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "toepapp-9f46c",
+      storageBucket: "toepapp-9f46c.firebasestorage.app",
       messagingSenderId: "1028290422568",
-      appId:             "1:1028290422568:web:5ded1f7b8b3f39ae76121d",
-      measurementId:     "G-RDTJFC4QSL"
+      appId: "1:1028290422568:web:5ded1f7b8b3f39ae76121d",
+      measurementId: "G-RDTJFC4QSL"
     };
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
@@ -56,6 +56,18 @@
       });
     }
 
+    // Remove all records for a player
+    async function removePlayer(name) {
+      const ref = db.ref('leaderboard');
+      const snap = await ref.orderByChild('name').equalTo(name).once('value');
+      const updates = {};
+      snap.forEach(child => {
+        updates[child.key] = null;
+      });
+      // Batch remove
+      return ref.update(updates);
+    }
+
     // Fetch and aggregate all stats from /leaderboard
     async function fetchAllPlayers() {
       const snap = await db.ref('leaderboard').once('value');
@@ -63,7 +75,7 @@
       const agg = {};
       Object.values(entries).forEach(r => {
         if (!agg[r.name]) agg[r.name] = { name: r.name, wins: 0, losses: 0 };
-        agg[r.name].wins   += r.wins;
+        agg[r.name].wins += r.wins;
         agg[r.name].losses += r.losses;
       });
       return Object.values(agg).sort((a, b) => b.wins - a.wins);
@@ -78,11 +90,16 @@
           <div>${p.name}</div>
           <div class="text-center">${p.wins}</div>
           <div class="text-center">${p.losses}</div>
-          <div class="text-center space-x-1">
-            <button data-name="${p.name}" data-action="addWin"  class="btn btn-success p-1">+Win</button>
-            <button data-name="${p.name}" data-action="remWin"  class="btn btn-secondary p-1">–Win</button>
-            <button data-name="${p.name}" data-action="addLoss" class="btn btn-danger p-1">+Loss</button>
-            <button data-name="${p.name}" data-action="remLoss" class="btn btn-secondary p-1">–Loss</button>
+          <div class="text-center space-y-1">
+            <div class="space-x-1">
+              <button data-name="${p.name}" data-action="addWin"  class="btn btn-success p-1">+Win</button>
+              <button data-name="${p.name}" data-action="remWin"  class="btn btn-secondary p-1">–Win</button>
+              <button data-name="${p.name}" data-action="addLoss" class="btn btn-danger p-1">+Loss</button>
+              <button data-name="${p.name}" data-action="remLoss" class="btn btn-secondary p-1">–Loss</button>
+            </div>
+            <div>
+              <button data-name="${p.name}" data-action="removePlayer" class="btn btn-danger p-1 w-full">remove player</button>
+            </div>
           </div>
         </li>
       `).join('');
@@ -99,6 +116,10 @@
       if (action === 'remWin') w = -1;
       if (action === 'addLoss') l = 1;
       if (action === 'remLoss') l = -1;
+      if (action === 'removePlayer') {
+        await removePlayer(name);
+        return renderAdmin();
+      }
       await pushRecord(name, w, l);
       renderAdmin();
     });

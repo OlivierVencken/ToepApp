@@ -177,10 +177,7 @@
   async function fetchTopRecords(limit = 10) {
     try {
       // COMPAT SDK uses .once('value') on queries
-      const snap = await db.ref('leaderboard')
-        .orderByChild('ts')
-        .limitToLast(100)
-        .once('value');
+      const snap = await db.ref('leaderboard').once('value');
       if (!snap.exists()) return [];
       const all = Object.values(snap.val());
       const agg = all.reduce((m, r) => {

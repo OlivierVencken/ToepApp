@@ -235,17 +235,6 @@
     const db = firebase.database();
   </script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker
-          .register('/static/service-worker.js')
-          .then(reg => console.log('SW registered:', reg.scope))
-          .catch(err => console.error('SW error:', err));
-      });
-    }
-  </script>
-
   <script src="/static/app.js" defer></script>
 </body>
 
