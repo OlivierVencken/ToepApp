@@ -37,6 +37,14 @@
   --gap-sm: 0.5rem;
   --gap-md: 1rem;
   --gap-lg: 1.5rem;
+
+  /* Animation variables */
+  --anim-fast: 160ms;
+  --anim-medium: 280ms;
+  --anim-slow: 420ms;
+  --float-duration: 520ms;       /* how long the float animations run */
+  --float-distance-up: -18px;    /* negative = up */
+  --float-distance-down: 14px;   /* (kept for compatibility; not used) */
 }
 
 /* Dark Mode Theme */
@@ -59,7 +67,7 @@ body {
   background-color: var(--bg-primary) !important;
 }
 
-/* Dark Mode Theme */
+/* Dark Mode Theme (duplicate kept intentionally for safety) */
 [data-theme="dark"] {
   --bg-primary: var(--color-black);
   --bg-secondary: var(--color-gray-800);
@@ -162,7 +170,14 @@ body {
   touch-action: manipulation;
 }
 
-/* Base Button Styles */
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Base Button Styles
+   NOTE: removed transform transition so button presses don't trigger transform GPU transitions
+   which could make the card feel like it moves. */
 .btn {
   display: inline-block;
   padding: var(--btn-padding-v) var(--btn-padding-h);
@@ -172,12 +187,17 @@ body {
   border-radius: var(--btn-radius);
   cursor: pointer;
   text-align: center;
-  transition: background-color var(--transition-fast);
+  /* remove transform from transitions to prevent layout/jank perception */
+  transition: background-color var(--transition-fast), box-shadow var(--anim-fast);
   touch-action: manipulation;
+  position: relative; /* for ripple child */
+  overflow: hidden; /* contain ripple */
 }
 
+/* Explicitly forbid transform changes on :active to avoid any movement */
+.btn:active,
 .btn:focus {
-  outline: none;
+  transform: none !important;
 }
 
 /* Button Variants */
@@ -271,9 +291,15 @@ body {
   font-weight: bold;
   cursor: pointer;
   touch-action: manipulation;
+  display: inline-block;
+  transition: transform var(--anim-fast) cubic-bezier(.2,.9,.2,1);
+  transform-origin: center;
 }
+.title-button:active { transform: scale(0.94); }
 
-/* Player Card */
+/* Player Card
+   NOTE: transform removed from transition so updating numbers won't cause perceived card movement.
+   Entrance/exit animations remain. */
 .player-card {
   display: flex;
   position: relative;
@@ -284,6 +310,14 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   gap: var(--gap-md);
   transition: background-color var(--transition-fast), color var(--transition-fast);
+  opacity: 1;
+}
+
+.player-card.removing {
+  animation: cardOut var(--anim-medium) forwards;
+}
+@keyframes cardOut {
+  to { opacity: 0; transform: translateX(-18px) scale(.98); height: 0; margin: 0; padding: 0; }
 }
 
 /* Warning & Disabled States */
@@ -333,9 +367,13 @@ body {
   font-weight: 600;
 }
 
+/* Reserve horizontal space for points to prevent layout shift (prevents "shake") */
 .player-info .points {
   font-size: 1.5rem;
   color: var(--color-blue-500);
+  min-width: 3ch;      /* reserve ~3 character width (supports up to double-digit neatly) */
+  text-align: center;  /* center alignment avoids shifting */
+  display: inline-block;
 }
 
 /* Player Actions & Small Section */
@@ -351,6 +389,7 @@ body {
   align-items: center;
 }
 
+/* Reserve space for small-count similarly */
 .small-section {
   flex: 1;
   display: flex;
@@ -362,7 +401,15 @@ body {
 .small-count {
   font-size: 1.25rem;
   color: var(--color-pink-150);
+  transition: transform var(--anim-fast) cubic-bezier(.2,.9,.2,1);
+  min-width: 2ch;
+  text-align: center;
+  display: inline-block;
 }
+.small-count.pulse {
+  animation: smallPulse 340ms cubic-bezier(.2,.9,.2,1);
+}
+@keyframes smallPulse { 0% { transform: scale(1); } 50% { transform: scale(1.16); } 100% { transform: scale(1); } }
 
 .small-section .label {
   font-size: 0.875rem;
@@ -386,6 +433,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
+  transition: background-color var(--anim-medium);
 }
 
 [data-modal].active {
@@ -397,6 +445,12 @@ body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   transition: background-color var(--transition-fast), color var(--transition-fast);
+  transform-origin: center;
+  animation: modalIn var(--anim-medium) cubic-bezier(.2,.9,.2,1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Input Fields */
@@ -445,6 +499,76 @@ select:focus {
 [data-theme="dark"] #newName {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
+}
+
+/* Floating +1 */
+/* shorter float distance and duration so animation stays inside the card */
+.float-plus {
+  position: fixed;
+  pointer-events: none;
+  font-weight: 700;
+  font-size: .85rem;
+  transform-origin: center;
+  animation: floatUp var(--float-duration) cubic-bezier(.22,.8,.32,1);
+  opacity: 0;
+  z-index: 9999;
+  color: var(--color-blue-600);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.12);
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: translateY(var(--float-distance-up)) scale(.92); opacity: 0; }
+}
+
+/* Floating -1: now an exact copy of +1 but with a minus character.
+   identical animation, identical color (blue), same timing. */
+.float-minus {
+  position: fixed;
+  pointer-events: none;
+  font-weight: 700;
+  font-size: .85rem;
+  transform-origin: center;
+  animation: floatUp var(--float-duration) cubic-bezier(.22,.8,.32,1);
+  opacity: 0;
+  z-index: 9999;
+  color: var(--color-blue-600); /* same blue as +1 */
+  text-shadow: 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* Confetti pieces */
+.confetti {
+  position: fixed;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  will-change: transform, opacity;
+  animation: confettiFall 900ms linear forwards;
+  z-index: 9998;
+}
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg) translateX(40px); opacity: 0; }
+}
+
+/* Staggered list (leaderboard) using --i variable */
+#leaderboardList > li {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: lbIn 360ms ease forwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes lbIn { to { opacity: 1; transform: translateY(0); } }
+
+/* Touch ripple (for .btn) */
+.btn-ripple {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0.18;
+  transform: scale(0);
+  transition: transform 360ms ease, opacity 360ms ease;
+  background: currentColor;
+  z-index: 5;
 }
 
 /* Responsive: maintain horizontal layout */

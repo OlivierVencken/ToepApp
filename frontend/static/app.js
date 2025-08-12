@@ -121,7 +121,7 @@
       }
 
       li.innerHTML = `
-        <button data-action="remove"    data-idx="${i}" class="remove-btn">×</button>
+        <button data-action="remove"    data-idx="${i}" class="remove-btn" aria-label="Verwijder speler">&times;</button>
         <div class="player-info">
           <div class="name">${p.name}</div>
           <div class="points">${p.points}</div>
@@ -143,10 +143,11 @@
     });
   }
 
+  // Leaderboard render updated to set CSS variable --i for stagger
   function renderLeaderboard(players) {
     const lb = document.querySelector(ui.leaderboardList);
-    lb.innerHTML = players.map(p =>
-      `<li class="grid grid-cols-3">
+    lb.innerHTML = players.map((p, idx) =>
+      `<li class="grid grid-cols-3" style="--i: ${idx}">
         <div>${p.name}</div>
         <div class="text-center">${p.wins}</div>
         <div class="text-center">${p.losses}</div>
@@ -157,8 +158,10 @@
   // MODAL CONTROLS
   function toggleModal(name, show) {
     const modal = document.querySelector(ui.modals[name]);
+    // keep previous 'hidden'/'flex' behavior and also toggle active class for our CSS
     modal.classList.toggle('hidden', !show);
     modal.classList.toggle('flex', show);
+    modal.classList.toggle('active', show);
   }
 
   // FIREBASE HELPERS
@@ -212,14 +215,179 @@
 
   // EVENT HANDLING
   const actionHandlers = {
-    titleClick: () => Sound.play('titleClick'),
+    titleClick: () => { Sound.play('titleClick'); },
     incPoints: i => { state.players[i].points++; Sound.play('pointAdd'); },
     decPoints: i => { state.players[i].points--; Sound.play('pointRemove'); },
     incSmall: i => { state.players[i].small++; Sound.play('smallAdd'); },
     resetSmall: i => { state.players[i].small = 0; Sound.play('smallReset'); },
-    remove: i => state.players.splice(i, 1)
+    remove: i => { /* replaced later with animate-aware handler */ }
   };
 
+  /* --- Animation helpers --- */
+
+  // generic float creator: type = 'plus' | 'minus'
+  function createFloatDelta(cardEl, text = '+1', type = 'plus') {
+    // Anchor above the player's name but start slightly lower (closer to the name)
+    const nameEl = cardEl.querySelector('.player-info .name');
+    const cardRect = cardEl.getBoundingClientRect();
+    const rect = nameEl ? nameEl.getBoundingClientRect() : cardRect;
+    const el = document.createElement('span');
+    el.textContent = text;
+
+    // class and style for plus/minus
+    if (type === 'minus') {
+      el.className = 'float-minus';
+    } else {
+      el.className = 'float-plus';
+    }
+
+    // start a bit lower than before, but still just above the name (consistent with earlier)
+    const START_OFFSET_ABOVE_NAME = 8; // px
+    const startTop = rect.top - START_OFFSET_ABOVE_NAME;
+
+    // center horizontally above the name element
+    const left = rect.left + (rect.width / 2) - 10; // approx half width of float
+    el.style.left = Math.min(Math.max(6, left), window.innerWidth - 30) + 'px';
+    el.style.top = `${startTop}px`;
+
+    // Ensure it stays visually inside the player card by not starting too close to the card top.
+    const minTopInsideCard = cardRect.top + 6;
+    if (startTop < minTopInsideCard) {
+      el.style.top = `${minTopInsideCard}px`;
+    }
+
+    document.body.appendChild(el);
+
+    // cleanup after animation completes
+    setTimeout(() => el.remove(), 900);
+  }
+
+  // keep createFloatPlus for backwards compatibility (calls generic)
+  function createFloatPlus(cardEl, text = '+1') {
+    createFloatDelta(cardEl, text, 'plus');
+  }
+
+  // createFloatMinus convenience
+  function createFloatMinus(cardEl, text = '-1') {
+    createFloatDelta(cardEl, text, 'minus');
+  }
+
+  /* Confetti: low-cost DOM confetti (small number, mobile-friendly) */
+  function triggerConfetti(count = 20) {
+    const colors = ['#ff6b6b','#ffd93d','#6bffb3','#6bb7ff','#d19bff'];
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.background = colors[i % colors.length];
+      c.style.transform = `rotate(${Math.random()*360}deg) translateX(${(Math.random()-0.5)*80}px)`;
+      c.style.animationDelay = (Math.random()*200) + 'ms';
+      document.body.appendChild(c);
+      // remove when done
+      setTimeout(() => c.remove(), 1400);
+    }
+  }
+
+  /* Animate removal: add class then actually remove from state after animation end.
+     This function manages its own render cycle, so the caller should return a truthy 'handled' value. */
+  function animateRemove(index) {
+    const list = document.querySelector('#playerList');
+    const li = list.children[index];
+    if (!li) {
+      // fallback: just remove immediately
+      state.players.splice(index, 1);
+      renderPlayers();
+      return true;
+    }
+    li.classList.add('removing');
+    // wait for animation to finish then remove from state and re-render
+    const onEnd = () => {
+      li.removeEventListener('animationend', onEnd);
+      // ensure index still in range
+      if (index >= 0 && index < state.players.length) {
+        state.players.splice(index, 1);
+      }
+      renderPlayers();
+    };
+    li.addEventListener('animationend', onEnd);
+    return true; // signal caller that we handled render lifecycle
+  }
+
+  /* Touch ripple (for .btn) */
+  document.body.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'btn-ripple';
+    const size = Math.max(24, Math.max(r.width, r.height));
+    ripple.style.width = ripple.style.height = size + 'px';
+    const left = e.clientX - r.left - size / 2;
+    const top = e.clientY - r.top - size / 2;
+    ripple.style.left = left + 'px';
+    ripple.style.top = top + 'px';
+    btn.appendChild(ripple);
+    requestAnimationFrame(() => {
+      ripple.style.transform = 'scale(2.6)';
+      ripple.style.opacity = '0';
+    });
+    setTimeout(() => { ripple.remove(); }, 420);
+  });
+
+  /* --- Integrate animation behavior into handlers --- */
+
+  // Replace remove handler with animate-aware version
+  actionHandlers.remove = (i) => animateRemove(i);
+
+  // Wrap incPoints to show +1 float after the DOM has updated
+  const originalIncPoints = actionHandlers.incPoints;
+  actionHandlers.incPoints = (i) => {
+    originalIncPoints(i);
+    // let the outer render happen, then create float (outer dispatcher will call renderPlayers)
+    requestAnimationFrame(() => {
+      const li = document.querySelector('#playerList').children[i];
+      if (li) createFloatPlus(li, '+1');
+    });
+  };
+
+  // Wrap decPoints to show -1 float after the DOM has updated
+  const originalDecPoints = actionHandlers.decPoints;
+  actionHandlers.decPoints = (i) => {
+    originalDecPoints(i);
+    requestAnimationFrame(() => {
+      const li = document.querySelector('#playerList').children[i];
+      if (li) createFloatMinus(li, '-1');
+    });
+  };
+
+  // Wrap incSmall to pulse the small-count element after render
+  const originalIncSmall = actionHandlers.incSmall;
+  actionHandlers.incSmall = (i) => {
+    originalIncSmall(i);
+    requestAnimationFrame(() => {
+      const li = document.querySelector('#playerList').children[i];
+      if (li) {
+        const smallEl = li.querySelector('.small-count');
+        if (smallEl) {
+          smallEl.classList.remove('pulse');
+          // force reflow to restart animation
+          void smallEl.offsetWidth;
+          smallEl.classList.add('pulse');
+        }
+      }
+    });
+  };
+
+  // Celebrate after endGame finishes (preserve original behavior)
+  const originalEndGame = endGame;
+  endGame = async function () {
+    await originalEndGame();
+    // small celebratory animation
+    triggerConfetti(18);
+  };
+
+  /* Document click handler: changed so actionHandlers that manage their own render can opt out
+     of the default immediate render by returning a truthy 'handled' value. */
   document.body.addEventListener('click', async e => {
     const btn = e.target.closest('button');
     if (!btn) return;
@@ -228,8 +396,8 @@
     const idx = btn.dataset.idx && Number(btn.dataset.idx);
 
     if (action && actionHandlers[action]) {
-      actionHandlers[action](idx);
-      renderPlayers();
+      const handled = actionHandlers[action](idx);
+      if (!handled) renderPlayers();
       return;
     }
 
@@ -252,7 +420,8 @@
 
       case 'showLeaderboard': {
         try {
-          const top = await fetchTopRecords(10);
+          // fetch more if you want; default limit is 10 but you can increase
+          const top = await fetchTopRecords(20);
           renderLeaderboard(top);
           toggleModal('leaderboard', true);
         } catch (err) {
