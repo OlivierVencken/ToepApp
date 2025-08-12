@@ -1,18 +1,9 @@
 TODO: 
-Add splash screen
-- new splashscreen (Luc?)
-
 Animations?
 - adding a point
 - removing a point
 - player reaches max points
 - game end (win)
-
-Improve PWA
-- manifest
-- service worker
-- test with https://www.pwabuilder.com/ or https://progressier.com/
-- package to app store?
 
 Aliases
 - let multiple names point to one name in the database 
