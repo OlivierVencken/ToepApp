@@ -238,6 +238,12 @@
     const db = firebase.database();
   </script>
 
+  <script>
+    if (typeof navigator.serviceWorker !== 'undefined') {
+      navigator.serviceWorker.register('/static/service-worker.js')
+    }
+  </script>
+
   <script src="/static/app.js" defer></script>
 </body>
 
